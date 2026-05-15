@@ -1,7 +1,5 @@
 // netlify/functions/flow-create-payment.js
-// Crea una orden de pago en Flow para activar Premium
-
-const crypto = require('crypto')
+import crypto from 'crypto'
 
 const FLOW_API_URL = process.env.FLOW_ENV === 'sandbox'
   ? 'https://sandbox.flow.cl/api'
@@ -11,13 +9,12 @@ const API_KEY = process.env.FLOW_API_KEY
 const SECRET_KEY = process.env.FLOW_SECRET_KEY
 
 function signParams(params) {
-  // Flow requiere ordenar params alfabéticamente y firmar con HMAC-SHA256
   const keys = Object.keys(params).sort()
   const toSign = keys.map(k => `${k}${params[k]}`).join('')
   return crypto.createHmac('sha256', SECRET_KEY).update(toSign).digest('hex')
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method not allowed' }
   }
@@ -38,16 +35,15 @@ exports.handler = async (event) => {
       commerceOrder,
       currency: 'CLP',
       email: userEmail,
-      paymentMethod: 9, // Todos los medios disponibles
+      paymentMethod: 9,
       subject: 'LaminaX Premium - Suscripción mensual',
       urlConfirmation: `${baseUrl}/.netlify/functions/flow-confirm-payment`,
       urlReturn: `${baseUrl}/upgrade?status=success`,
-      optional: JSON.stringify({ userId }), // Guardamos userId para el callback
+      optional: JSON.stringify({ userId }),
     }
 
     params.s = signParams(params)
 
-    // Llamar a Flow API
     const formBody = Object.keys(params)
       .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
       .join('&')

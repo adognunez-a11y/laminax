@@ -1,8 +1,6 @@
 // netlify/functions/flow-confirm-payment.js
-// Flow llama a esta función cuando el pago se confirma
-
-const crypto = require('crypto')
-const { createClient } = require('@supabase/supabase-js')
+import crypto from 'crypto'
+import { createClient } from '@supabase/supabase-js'
 
 const FLOW_API_URL = process.env.FLOW_ENV === 'sandbox'
   ? 'https://sandbox.flow.cl/api'
@@ -13,7 +11,7 @@ const SECRET_KEY = process.env.FLOW_SECRET_KEY
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY // Service key (no la anon key) para escribir desde backend
+  process.env.SUPABASE_SERVICE_KEY
 )
 
 function signParams(params) {
@@ -22,9 +20,8 @@ function signParams(params) {
   return crypto.createHmac('sha256', SECRET_KEY).update(toSign).digest('hex')
 }
 
-exports.handler = async (event) => {
+export const handler = async (event) => {
   try {
-    // Flow envía el token por POST
     const body = new URLSearchParams(event.body)
     const token = body.get('token')
 
@@ -32,7 +29,6 @@ exports.handler = async (event) => {
       return { statusCode: 400, body: 'Token requerido' }
     }
 
-    // Consultar estado del pago a Flow
     const params = { apiKey: API_KEY, token }
     params.s = signParams(params)
 
@@ -53,12 +49,10 @@ exports.handler = async (event) => {
         return { statusCode: 400, body: 'userId no encontrado' }
       }
 
-      // Calcular período: hoy + 30 días
       const now = new Date()
       const periodEnd = new Date(now)
       periodEnd.setDate(periodEnd.getDate() + 30)
 
-      // Activar Premium en Supabase
       const { error } = await supabase
         .from('subscriptions')
         .upsert({
