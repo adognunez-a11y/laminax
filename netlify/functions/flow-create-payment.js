@@ -1,0 +1,86 @@
+// netlify/functions/flow-create-payment.js
+// Crea una orden de pago en Flow para activar Premium
+
+const crypto = require('crypto')
+
+const FLOW_API_URL = process.env.FLOW_ENV === 'sandbox'
+  ? 'https://sandbox.flow.cl/api'
+  : 'https://www.flow.cl/api'
+
+const API_KEY = process.env.FLOW_API_KEY
+const SECRET_KEY = process.env.FLOW_SECRET_KEY
+
+function signParams(params) {
+  // Flow requiere ordenar params alfabéticamente y firmar con HMAC-SHA256
+  const keys = Object.keys(params).sort()
+  const toSign = keys.map(k => `${k}${params[k]}`).join('')
+  return crypto.createHmac('sha256', SECRET_KEY).update(toSign).digest('hex')
+}
+
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method not allowed' }
+  }
+
+  try {
+    const { userId, userEmail } = JSON.parse(event.body)
+
+    if (!userId || !userEmail) {
+      return { statusCode: 400, body: JSON.stringify({ error: 'Faltan datos' }) }
+    }
+
+    const commerceOrder = `PREMIUM-${userId}-${Date.now()}`
+    const baseUrl = process.env.URL || 'https://laminax-chile.netlify.app'
+
+    const params = {
+      apiKey: API_KEY,
+      amount: 2990,
+      commerceOrder,
+      currency: 'CLP',
+      email: userEmail,
+      paymentMethod: 9, // Todos los medios disponibles
+      subject: 'LaminaX Premium - Suscripción mensual',
+      urlConfirmation: `${baseUrl}/.netlify/functions/flow-confirm-payment`,
+      urlReturn: `${baseUrl}/upgrade?status=success`,
+      optional: JSON.stringify({ userId }), // Guardamos userId para el callback
+    }
+
+    params.s = signParams(params)
+
+    // Llamar a Flow API
+    const formBody = Object.keys(params)
+      .map(k => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`)
+      .join('&')
+
+    const response = await fetch(`${FLOW_API_URL}/payment/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formBody,
+    })
+
+    const data = await response.json()
+
+    if (data.url && data.token) {
+      return {
+        statusCode: 200,
+        body: JSON.stringify({
+          paymentUrl: `${data.url}?token=${data.token}`,
+          token: data.token,
+          commerceOrder,
+        }),
+      }
+    } else {
+      console.error('Flow error:', data)
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: data.message || 'Error al crear pago en Flow' }),
+      }
+    }
+  } catch (err) {
+    console.error('Function error:', err)
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: 'Error interno del servidor' }),
+    }
+  }
+}

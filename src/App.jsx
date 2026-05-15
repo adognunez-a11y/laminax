@@ -14,11 +14,13 @@ import Inicio from './pages/Inicio'
 import Bienvenida from './pages/Bienvenida'
 import Terminos from './pages/Terminos'
 import EditarPerfil from './pages/EditarPerfil'
+import Calificar from './pages/Calificar'
+import Upgrade from './pages/Upgrade'
 
 function AppRoutes() {
   const { user, loading } = useAuth()
   if (loading) return (
-    <div className="min-h-screen bg-[#0a0a0f] flex items-center justify-center">
+    <div className="min-h-screen bg-[#050508] flex items-center justify-center">
       <div className="text-[#ccff00] text-xl">Cargando...</div>
     </div>
   )
@@ -31,6 +33,8 @@ function AppRoutes() {
       <Route path="/editar-perfil" element={user ? <EditarPerfil /> : <Navigate to="/login" />} />
       <Route path="/chat/:userId" element={user ? <Chat /> : <Navigate to="/login" />} />
       <Route path="/listing/:id" element={user ? <DetalleListing /> : <Navigate to="/login" />} />
+      <Route path="/calificar/:transactionId" element={user ? <Calificar /> : <Navigate to="/login" />} />
+      <Route path="/upgrade" element={user ? <Upgrade /> : <Navigate to="/login" />} />
       <Route path="/" element={user ? <AppLayout /> : <Navigate to="/login" />}>
         <Route index element={<Inicio />} />
         <Route path="album" element={<MiAlbum />} />
