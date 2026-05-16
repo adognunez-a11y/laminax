@@ -26,7 +26,7 @@ export const handler = async (event) => {
       return { statusCode: 400, body: JSON.stringify({ error: 'Faltan datos' }) }
     }
 
-    const commerceOrder = `PREMIUM-${userId}-${Date.now()}`
+    const commerceOrder = `PRM-${userId.slice(0,8)}-${Date.now().toString().slice(-6)}`
     const baseUrl = process.env.URL || 'https://laminax-chile.netlify.app'
 
     const params = {
