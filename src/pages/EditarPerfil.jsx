@@ -3,10 +3,21 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 
+const CIUDADES_CHILE = [
+  'Arica', 'Iquique', 'Antofagasta', 'Calama', 'Copiapó', 'La Serena', 'Coquimbo',
+  'Valparaíso', 'Viña del Mar', 'Quilpué', 'San Antonio',
+  'Santiago', 'Puente Alto', 'Maipú', 'La Florida', 'Las Condes', 'Ñuñoa',
+  'Providencia', 'Quilicura', 'San Bernardo', 'Pudahuel',
+  'Rancagua', 'Curicó', 'Talca', 'Linares', 'Chillán',
+  'Concepción', 'Talcahuano', 'Los Ángeles', 'Coronel',
+  'Temuco', 'Padre Las Casas', 'Villarrica', 'Pucón',
+  'Valdivia', 'Osorno', 'Puerto Montt', 'Castro', 'Coyhaique', 'Punta Arenas',
+]
+
 export default function EditarPerfil() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ username: '', full_name: '', whatsapp: '' })
+  const [form, setForm] = useState({ username: '', full_name: '', whatsapp: '', ciudad: '' })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -15,7 +26,12 @@ export default function EditarPerfil() {
 
   async function cargarPerfil() {
     const { data } = await supabase.from('users').select('*').eq('id', user.id).single()
-    if (data) setForm({ username: data.username || '', full_name: data.full_name || '', whatsapp: data.whatsapp || '' })
+    if (data) setForm({
+      username: data.username || '',
+      full_name: data.full_name || '',
+      whatsapp: data.whatsapp || '',
+      ciudad: data.ciudad || '',
+    })
     setLoading(false)
   }
 
@@ -30,6 +46,7 @@ export default function EditarPerfil() {
       username: form.username.toLowerCase(),
       full_name: form.full_name,
       whatsapp: form.whatsapp,
+      ciudad: form.ciudad || null,
     }).eq('id', user.id)
 
     if (error) {
@@ -77,6 +94,22 @@ export default function EditarPerfil() {
             placeholder="Juan Pérez"
             className={inputClass}
           />
+        </div>
+
+        <div>
+          <label className="text-sm text-gray-400 mb-2 block font-bold">Ciudad</label>
+          <select
+            value={form.ciudad}
+            onChange={e => setForm(f => ({ ...f, ciudad: e.target.value }))}
+            className={inputClass}
+            style={{ appearance: 'none' }}
+          >
+            <option value="">📍 Selecciona tu ciudad</option>
+            {CIUDADES_CHILE.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <p className="text-gray-600 text-xs mt-1">Para encontrar coleccionistas cerca de ti</p>
         </div>
 
         <div>

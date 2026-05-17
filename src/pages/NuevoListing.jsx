@@ -65,7 +65,7 @@ export default function NuevoListing() {
       status: 'active',
     })
     if (error) alert('Error: ' + error.message)
-    else navigate('/explorar')
+    else navigate('/mercado')
     setSubmitting(false)
   }
 
